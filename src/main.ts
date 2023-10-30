@@ -3,6 +3,13 @@ import "./style.css";
 import leaflet from "leaflet";
 import luck from "./luck";
 
+// These imports are needed so that Vite knows to bundle
+// the marker images for deployment even though they are
+// not explicitly mentioned in our code below.
+import "leaflet/dist/images/marker-icon.png";
+import "leaflet/dist/images/marker-icon-2x.png";
+import "leaflet/dist/images/marker-shadow.png";
+
 const MERRILL_CLASSROOM = leaflet.latLng({
     lat: 36.9995,
     lng: - 122.0533
