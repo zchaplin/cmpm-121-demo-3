@@ -8,10 +8,10 @@ const MERRILL_CLASSROOM = leaflet.latLng({
   lat: 38.8977,
   lng: -77.0365,
 });
-interface Cell {
-  readonly i: number;
-  readonly j: number;
-}
+// interface Cell {
+//   readonly i: number;
+//   readonly j: number;
+// }
 
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
