@@ -3,15 +3,15 @@ import "./style.css";
 import leaflet from "leaflet";
 import luck from "./luck";
 import "./leafletWorkaround";
-
+import { Board } from "./board.ts";
+interface Cell {
+  readonly i: number;
+  readonly j: number;
+}
 const MERRILL_CLASSROOM = leaflet.latLng({
-  lat: 38.8977,
-  lng: -77.0365,
+  lat: 36.9995,
+  lng: -122.0535,
 });
-// interface Cell {
-//   readonly i: number;
-//   readonly j: number;
-// }
 
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
@@ -28,7 +28,12 @@ const map = leaflet.map(mapContainer, {
   zoomControl: false,
   scrollWheelZoom: false,
 });
-
+interface Coin {
+  x: number;
+  y: number;
+  index: number;
+}
+let purse: Coin[] = [];
 leaflet
   .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -43,18 +48,14 @@ playerMarker.addTo(map);
 
 let points = 0;
 const statusPanel = document.querySelector<HTMLDivElement>("#statusPanel")!;
-statusPanel.innerHTML = "No points yet...";
+statusPanel.innerHTML = "No coins yet...";
+const board = new Board(TILE_DEGREES, NEIGHBORHOOD_SIZE);
 
 function makePit(i: number, j: number) {
+  console.log(i, j);
   const bounds = leaflet.latLngBounds([
-    [
-      MERRILL_CLASSROOM.lat + i * TILE_DEGREES,
-      MERRILL_CLASSROOM.lng + j * TILE_DEGREES,
-    ],
-    [
-      MERRILL_CLASSROOM.lat + (i + 1) * TILE_DEGREES,
-      MERRILL_CLASSROOM.lng + (j + 1) * TILE_DEGREES,
-    ],
+    [i * TILE_DEGREES, j * TILE_DEGREES],
+    [(i + 1) * TILE_DEGREES, (j + 1) * TILE_DEGREES],
   ]);
 
   const pit = leaflet.rectangle(bounds) as leaflet.Layer;
@@ -68,11 +69,21 @@ function makePit(i: number, j: number) {
                 <button id="place">place</button>`;
     const poke = container.querySelector<HTMLButtonElement>("#poke")!;
     poke.addEventListener("click", () => {
+      const tmpCoin: Coin = {
+        x: i,
+        y: j,
+        index: 0,
+      };
+      purse.push(tmpCoin);
       value--;
       container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
         value.toString();
       points++;
-      statusPanel.innerHTML = `${points} points accumulated`;
+      let holdCoins = "";
+      for (const coin of purse) {
+        holdCoins += coin.x + "," + coin.y + ": " + coin.index + " --- ";
+      }
+      statusPanel.innerHTML = `${holdCoins}`;
     });
     const place = container.querySelector<HTMLButtonElement>("#place")!;
     place.addEventListener("click", () => {
@@ -80,17 +91,27 @@ function makePit(i: number, j: number) {
       container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
         value.toString();
       points--;
-      statusPanel.innerHTML = `${points} points accumulated`;
+      purse.pop();
+      let holdCoins = "";
+      for (const coin of purse) {
+        holdCoins += coin.x + "," + coin.y + ": " + coin.index + " --- ";
+      }
+      statusPanel.innerHTML = `${holdCoins}`;
     });
     return container;
   });
   pit.addTo(map);
 }
 
-for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-  for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
+for (let i = -NEIGHBORHOOD_SIZE; i <= NEIGHBORHOOD_SIZE; i++) {
+  for (let j = -NEIGHBORHOOD_SIZE; j <= NEIGHBORHOOD_SIZE; j++) {
     if (luck([i, j].toString()) < PIT_SPAWN_PROBABILITY) {
-      makePit(i, j);
+      const point = leaflet.latLng({
+        lat: MERRILL_CLASSROOM.lat + i * TILE_DEGREES,
+        lng: MERRILL_CLASSROOM.lng + j * TILE_DEGREES,
+      });
+      const cell: Cell = board.getCellForPoint(point);
+      makePit(cell.i, cell.j);
     }
   }
 }
