@@ -4,7 +4,9 @@ interface Cell {
   readonly i: number;
   readonly j: number;
 }
+const NEIGHBORHOOD_SIZE = 8;
 const PIT_SPAWN_PROBABILITY = 0.1;
+//const TILE_DEGREES = 1e-4;
 export class Board {
   readonly tileWidth: number;
   readonly tileVisibilityRadius: number;
@@ -45,7 +47,7 @@ export class Board {
 
     const bounds = leaflet.latLngBounds(
       leaflet.latLng(center.lat - halfSize, center.lng - halfSize),
-      leaflet.latLng(center.lat + halfSize, center.lng + halfSize)
+      leaflet.latLng(center.lat + halfSize, center.lng + halfSize),
     );
 
     return bounds;
@@ -56,21 +58,21 @@ export class Board {
     const originCell = this.getCellForPoint(point);
 
     for (
-      let i = -this.tileVisibilityRadius;
-      i <= this.tileVisibilityRadius;
+      let i = originCell.i - NEIGHBORHOOD_SIZE;
+      i <= originCell.i + NEIGHBORHOOD_SIZE;
       i++
     ) {
       for (
-        let j = -this.tileVisibilityRadius;
-        j <= this.tileVisibilityRadius;
+        let j = originCell.j - NEIGHBORHOOD_SIZE;
+        j <= originCell.j + NEIGHBORHOOD_SIZE;
         j++
       ) {
         if (luck([i, j].toString()) < PIT_SPAWN_PROBABILITY) {
-          const tmpCell: Cell = {
-            i: originCell.i + i,
-            j: originCell.j + j,
-          };
-          resultCells.push(this.getCanonicalCell(tmpCell));
+          const newCell: Cell = this.getCanonicalCell({
+            i: i,
+            j: j,
+          });
+          resultCells.push(newCell);
         }
       }
     }
