@@ -4,7 +4,7 @@ import leaflet from "leaflet";
 import luck from "./luck";
 import "./leafletWorkaround";
 import { Board } from "./board.ts";
-import { Geocache } from "./board.ts";
+// import { Geocache } from "./board.ts";
 
 interface Cell {
   readonly i: number;

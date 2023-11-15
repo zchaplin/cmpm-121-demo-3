@@ -79,21 +79,21 @@ export class Board {
   }
 }
 
-interface Geocoin {
-  mintingLocation: Cell;
-  serialNumber: number;
-}
+// interface Geocoin {
+//   mintingLocation: Cell;
+//   serialNumber: number;
+// }
 
-export class Geocache {
-  coins: Geocoin[];
+// export class Geocache {
+//   coins: Geocoin[];
 
-  constructor(cell: Cell) {
-    const numInitialCoins = Math.floor(
-      luck(["intialCoins", cell.i, cell.j].toString()) * 3
-    );
-    this.coins = [];
-    for (let i = 0; i < numInitialCoins; i++) {
-      this.coins.push({ mintingLocation: cell, serialNumber: i });
-    }
-  }
-}
+//   constructor(cell: Cell) {
+//     const numInitialCoins = Math.floor(
+//       luck(["intialCoins", cell.i, cell.j].toString()) * 3
+//     );
+//     this.coins = [];
+//     for (let i = 0; i < numInitialCoins; i++) {
+//       this.coins.push({ mintingLocation: cell, serialNumber: i });
+//     }
+//   }
+// }
