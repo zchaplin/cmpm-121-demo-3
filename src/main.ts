@@ -4,6 +4,8 @@ import leaflet from "leaflet";
 import luck from "./luck";
 import "./leafletWorkaround";
 import { Board } from "./board.ts";
+import { Geocache } from "./board.ts";
+
 interface Cell {
   readonly i: number;
   readonly j: number;
@@ -52,51 +54,64 @@ statusPanel.innerHTML = "No coins yet...";
 const board = new Board(TILE_DEGREES, NEIGHBORHOOD_SIZE);
 
 function makePit(i: number, j: number) {
-  console.log(i, j);
   const bounds = leaflet.latLngBounds([
     [i * TILE_DEGREES, j * TILE_DEGREES],
     [(i + 1) * TILE_DEGREES, (j + 1) * TILE_DEGREES],
   ]);
-
+  console.log(bounds);
   const pit = leaflet.rectangle(bounds) as leaflet.Layer;
-
+  let cache: Coin[] = [];
+  let value = Math.floor(luck([i, j, "initialValue"].toString()) * 100);
   pit.bindPopup(() => {
-    let value = Math.floor(luck([i, j, "initialValue"].toString()) * 100);
     const container = document.createElement("div");
     container.innerHTML = `
                 <div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
+                <div>Here are the current coins here:<div>
+                <div>${printCoins(cache)}
                 <button id="poke">poke</button>
                 <button id="place">place</button>`;
     const poke = container.querySelector<HTMLButtonElement>("#poke")!;
+    function update() {
+      container.innerHTML = `
+                <div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
+                <div>Here are the current coins here:<div>
+                <div>${printCoins(cache)}
+                <button id="poke">poke</button>
+                <button id="place">place</button>`;
+      pit.closePopup();
+      setTimeout(() => {
+        pit.openPopup();
+      }, 0);
+    }
     poke.addEventListener("click", () => {
-      const tmpCoin: Coin = {
-        x: i,
-        y: j,
-        index: 0,
-      };
-      purse.push(tmpCoin);
-      value--;
-      container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-        value.toString();
-      points++;
-      let holdCoins = "";
-      for (const coin of purse) {
-        holdCoins += coin.x + "," + coin.y + ": " + coin.index + " --- ";
+      if (value > 0) {
+        const tmpCoin: Coin = {
+          x: i,
+          y: j,
+          index: 0,
+        };
+        purse.push(tmpCoin);
+        update();
+        value--;
+        container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
+          value.toString();
+        points++;
+        statusPanel.innerHTML = `${printCoins(purse)}`;
       }
-      statusPanel.innerHTML = `${holdCoins}`;
     });
     const place = container.querySelector<HTMLButtonElement>("#place")!;
+
     place.addEventListener("click", () => {
-      value++;
-      container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-        value.toString();
-      points--;
-      purse.pop();
-      let holdCoins = "";
-      for (const coin of purse) {
-        holdCoins += coin.x + "," + coin.y + ": " + coin.index + " --- ";
+      if (points > 0) {
+        value++;
+        container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
+          value.toString();
+        points--;
+        cache.push(purse.pop()!);
+        update();
+        console.log(printCoins(cache));
+        statusPanel.innerHTML = `${printCoins(purse)}`;
       }
-      statusPanel.innerHTML = `${holdCoins}`;
     });
     return container;
   });
@@ -114,4 +129,11 @@ for (let i = -NEIGHBORHOOD_SIZE; i <= NEIGHBORHOOD_SIZE; i++) {
       makePit(cell.i, cell.j);
     }
   }
+}
+function printCoins(purse: Coin[]) {
+  let output = "";
+  for (const coin of purse) {
+    output += "X: " + coin.x + ", Y: " + coin.y + "<div>";
+  }
+  return output;
 }
