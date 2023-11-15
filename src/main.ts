@@ -1,14 +1,15 @@
 import "leaflet/dist/leaflet.css";
 import "./style.css";
 import leaflet from "leaflet";
-import luck from "./luck";
+//import luck from "./luck";
 import "./leafletWorkaround";
 import { Board } from "./board.ts";
-// import { Geocache } from "./board.ts";
+//import { Geocache } from "./board.ts";
 
 interface Cell {
   readonly i: number;
   readonly j: number;
+  coins: Coin[];
 }
 const MERRILL_CLASSROOM = leaflet.latLng({
   lat: 36.9995,
@@ -23,7 +24,6 @@ const CURRENT_LOCATION = leaflet.latLng({
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
 const NEIGHBORHOOD_SIZE = 8;
-
 const mapContainer = document.querySelector<HTMLElement>("#map")!;
 const northB = document.querySelector<HTMLElement>("#north")!;
 const southB = document.querySelector<HTMLElement>("#south")!;
@@ -34,12 +34,13 @@ function updateMapLocation(location: leaflet.LatLng): void {
   const newLatLng = leaflet.latLng(location.lat, location.lng);
   map.setView(newLatLng, GAMEPLAY_ZOOM_LEVEL);
   const nearCells: Cell[] = board.getCellsNearPoint(location);
+
   for (const pit of currentPopups) {
     map.removeLayer(pit);
   }
   currentPopups = [];
   for (const cell of nearCells) {
-    makePit(cell.i, cell.j);
+    makePit(cell);
   }
 }
 
@@ -89,39 +90,39 @@ const playerMarker = leaflet.marker(MERRILL_CLASSROOM);
 playerMarker.bindTooltip("That's you!");
 playerMarker.addTo(map);
 
-let points = 0;
 const statusPanel = document.querySelector<HTMLDivElement>("#statusPanel")!;
 statusPanel.innerHTML = "No coins yet...";
 const board = new Board(TILE_DEGREES, NEIGHBORHOOD_SIZE);
 let currentPopups: leaflet.Layer[] = [];
-function makePit(i: number, j: number) {
+function makePit(cell: Cell) {
   const bounds = leaflet.latLngBounds([
-    [i * TILE_DEGREES, j * TILE_DEGREES],
-    [(i + 1) * TILE_DEGREES, (j + 1) * TILE_DEGREES],
+    [cell.i * TILE_DEGREES, cell.j * TILE_DEGREES],
+    [(cell.i + 1) * TILE_DEGREES, (cell.j + 1) * TILE_DEGREES],
   ]);
-  console.log(bounds);
   const pit = leaflet.rectangle(bounds) as leaflet.Layer;
-  let cache: Coin[] = [];
-  let value = 3;
   currentPopups.push(pit);
-  for (let l = 0; l < 3; l++) {
-    const coin: Coin = { x: i, y: j, index: l };
-    cache.push(coin);
-  }
   pit.bindPopup(() => {
     const container = document.createElement("div");
     container.innerHTML = `
-                <div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
+                <div>There is a pit here at "${cell.i},${
+                  cell.j
+                }". It has value <span id="value">${
+                  cell.coins.length
+                }</span>.</div>
                 <div>Here are the current coins here:<div>
-                <div>${printCoins(cache)}
+                <div>${printCoins(cell.coins)}
                 <button id="poke">poke</button>
                 <button id="place">place</button>`;
     const poke = container.querySelector<HTMLButtonElement>("#poke")!;
     function update() {
       container.innerHTML = `
-                <div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
+                <div>There is a pit here at "${cell.i},${
+                  cell.j
+                }". It has value <span id="value">${
+                  cell.coins.length
+                }</span>.</div>
                 <div>Here are the current coins here:<div>
-                <div>${printCoins(cache)}
+                <div>${printCoins(cell.coins)}
                 <button id="poke">poke</button>
                 <button id="place">place</button>`;
       pit.closePopup();
@@ -130,32 +131,23 @@ function makePit(i: number, j: number) {
       }, 0);
     }
     poke.addEventListener("click", () => {
-      if (value > 0) {
-        const tmpCoin: Coin = {
-          x: i,
-          y: j,
-          index: 0,
-        };
-        purse.push(tmpCoin);
+      if (cell.coins.length > 0) {
+        purse.push(cell.coins.pop()!);
         update();
-        value--;
         container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-          value.toString();
-        points++;
+          cell.coins.length.toString();
         statusPanel.innerHTML = `${printCoins(purse)}`;
       }
     });
     const place = container.querySelector<HTMLButtonElement>("#place")!;
 
     place.addEventListener("click", () => {
-      if (points > 0) {
-        value++;
+      if (purse.length > 0) {
         container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-          value.toString();
-        points--;
-        cache.push(purse.pop()!);
+          cell.coins.length.toString();
+        let x: Coin = purse.pop()!;
+        cell.coins.push(x!);
         update();
-        console.log(printCoins(cache));
         statusPanel.innerHTML = `${printCoins(purse)}`;
       }
     });
@@ -164,11 +156,13 @@ function makePit(i: number, j: number) {
   pit.addTo(map);
 }
 
-function printCoins(purse: Coin[]) {
+function printCoins(coins: Coin[]) {
   let output = "";
-  for (const coin of purse) {
-    output +=
-      "X: " + coin.x + ", Y: " + coin.y + " index: " + coin.index + "<div>";
+  if (coins.length > 0) {
+    for (const coin of coins) {
+      output +=
+        "X: " + coin.x + ", Y: " + coin.y + " index: " + coin.index + "<div>";
+    }
   }
   return output;
 }
