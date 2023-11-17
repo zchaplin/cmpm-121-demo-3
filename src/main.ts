@@ -1,7 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import "./style.css";
 import leaflet from "leaflet";
-//import luck from "./luck";
 import "./leafletWorkaround";
 import { Board } from "./board.ts";
 
