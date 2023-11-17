@@ -27,6 +27,10 @@ const northB = document.querySelector<HTMLElement>("#north")!;
 const southB = document.querySelector<HTMLElement>("#south")!;
 const westB = document.querySelector<HTMLElement>("#west")!;
 const eastB = document.querySelector<HTMLElement>("#east")!;
+const reloadB = document.querySelector<HTMLElement>("#reload")!;
+reloadB.addEventListener("click", () => {
+  location.reload();
+});
 
 function updateMapLocation(location: leaflet.LatLng): void {
   const newLatLng = leaflet.latLng(location.lat, location.lng);
@@ -40,6 +44,7 @@ function updateMapLocation(location: leaflet.LatLng): void {
   for (const cell of nearCells) {
     makePit(cell);
   }
+  previousLocation = location;
 }
 
 northB.addEventListener("click", () => {
@@ -166,8 +171,7 @@ function printCoins(coins: Coin[]) {
 }
 const locateButton = document.querySelector<HTMLButtonElement>("#locate")!;
 const movementPath = leaflet.polyline([], { color: "blue" }).addTo(map);
-
-// Function to handle geolocation updates
+let previousLocation: leaflet.LatLng | null = null;
 function startLocationUpdates() {
   if (navigator.geolocation) {
     const options = {
@@ -181,9 +185,18 @@ function startLocationUpdates() {
         position.coords.latitude,
         position.coords.longitude,
       );
+      // Check if the user has moved by at least 0.0001 degrees
+      if (
+        previousLocation &&
+        userLocation.distanceTo(previousLocation) < 0.0001
+      ) {
+        // If not moved enough, skip the update
+        return;
+      }
+
       CURRENT_LOCATION.lat = userLocation.lat;
       CURRENT_LOCATION.lng = userLocation.lng;
-
+      updateMapLocation(CURRENT_LOCATION);
       // Update the Polyline with the new location
       const latLngs: leaflet.LatLng[] = (movementPath.getLatLngs() ||
         []) as leaflet.LatLng[];
@@ -191,6 +204,9 @@ function startLocationUpdates() {
       movementPath.setLatLngs(latLngs);
 
       updateMapLocation(CURRENT_LOCATION);
+
+      // Update the previous location for the next comparison
+      previousLocation = userLocation;
     }
 
     function error(error: GeolocationPositionError) {
