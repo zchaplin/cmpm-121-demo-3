@@ -166,4 +166,50 @@ function printCoins(coins: Coin[]) {
   }
   return output;
 }
-updateMapLocation(CURRENT_LOCATION);
+const locateButton = document.querySelector<HTMLButtonElement>("#locate")!;
+const movementPath = leaflet.polyline([], { color: "blue" }).addTo(map);
+
+// Function to handle geolocation updates
+function startLocationUpdates() {
+  if (navigator.geolocation) {
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    };
+
+    function success(position: GeolocationPosition) {
+      const userLocation = leaflet.latLng(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+      CURRENT_LOCATION.lat = userLocation.lat;
+      CURRENT_LOCATION.lng = userLocation.lng;
+
+      // Update the Polyline with the new location
+      const latLngs: leaflet.LatLng[] = (movementPath.getLatLngs() ||
+        []) as leaflet.LatLng[];
+      latLngs.push(userLocation);
+      movementPath.setLatLngs(latLngs);
+
+      updateMapLocation(CURRENT_LOCATION);
+    }
+
+    function error(error: GeolocationPositionError) {
+      console.error("Error getting user location:", error.message);
+    }
+
+    // Get initial position
+    navigator.geolocation.getCurrentPosition(success, error, options);
+
+    // Start continuous updates every second
+    setInterval(() => {
+      navigator.geolocation.getCurrentPosition(success, error, options);
+    }, 1000);
+  } else {
+    console.error("Geolocation is not supported by this browser");
+  }
+}
+
+// Add an event listener for the locate button
+locateButton.addEventListener("click", startLocationUpdates);
