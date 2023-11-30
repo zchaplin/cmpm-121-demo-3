@@ -35,6 +35,13 @@ reloadB.addEventListener("click", () => {
 function updateMapLocation(location: leaflet.LatLng): void {
   const newLatLng = leaflet.latLng(location.lat, location.lng);
   map.setView(newLatLng, GAMEPLAY_ZOOM_LEVEL);
+
+  // Draw the polyline with the new location
+  const latLngs: leaflet.LatLng[] = (movementPath.getLatLngs() ||
+    []) as leaflet.LatLng[];
+  latLngs.push(newLatLng);
+  movementPath.setLatLngs(latLngs);
+
   const nearCells: Cell[] = board.getCellsNearPoint(location);
 
   for (const pit of currentPopups) {
