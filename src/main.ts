@@ -36,6 +36,9 @@ function updateMapLocation(location: leaflet.LatLng): void {
   const newLatLng = leaflet.latLng(location.lat, location.lng);
   map.setView(newLatLng, GAMEPLAY_ZOOM_LEVEL);
 
+  // Update the playerMarker position
+  playerMarker.setLatLng(newLatLng);
+
   // Draw the polyline with the new location
   const latLngs: leaflet.LatLng[] = (movementPath.getLatLngs() ||
     []) as leaflet.LatLng[];
